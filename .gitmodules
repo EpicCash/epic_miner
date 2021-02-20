@@ -4,3 +4,7 @@
 [submodule "randomx"]
 	path = randomx
 	url = https://github.com/EpicCash/randomx.git
+[submodule "libuv"]
+	path = libuv
+	url = https://github.com/libuv/libuv.git
+	shallow = true
