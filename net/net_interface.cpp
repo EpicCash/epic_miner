@@ -7,6 +7,10 @@ net_interface::net_interface(on_connect_t&& on_connect, data_consumer_t&& on_rec
 {
 }
 
+net_interface::~net_interface()
+{
+}
+
 bool net_interface::set_hostname(const char* ip_port_str)
 {
 	char ip_port[256];

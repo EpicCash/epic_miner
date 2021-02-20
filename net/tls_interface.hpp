@@ -11,6 +11,7 @@ class tls_interface : public net_interface
 {
 public:
 	tls_interface(on_connect_t&& on_connect, data_consumer_t&& on_recv_data, on_error_t&& on_error, on_close_t&& on_close);
+	virtual ~tls_interface();
 
 	virtual void do_socket_write(const char* data, int len) override;
 	virtual void do_shutdown() override;

@@ -7,6 +7,10 @@ tls_interface::tls_interface(on_connect_t&& on_connect, data_consumer_t&& on_rec
 { 
 }
 
+tls_interface::~tls_interface()
+{
+}
+
 struct ssl_err_tok
 {
 	char* ptr;

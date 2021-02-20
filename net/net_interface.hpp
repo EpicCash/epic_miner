@@ -18,6 +18,7 @@ public:
 	typedef std::function<void()> on_close_t;
 
 	net_interface(on_connect_t&& on_connect, data_consumer_t&& on_recv_data, on_error_t&& on_error, on_close_t&& on_close);
+	virtual ~net_interface();
 
 	bool set_hostname(const char* ip_port_str);
 	void do_connect();
