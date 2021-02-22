@@ -17,7 +17,7 @@ enum out_colours : uint8_t
 // Alphanum keys only.
 int get_key();
 
-void set_colour(const out_colours& cl);
+void set_colour(out_colours cl);
 void reset_colour();
 
 inline void comp_localtime(const time_t* ctime, tm* stime)

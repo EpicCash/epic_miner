@@ -3,7 +3,7 @@
 #include <functional>
 #include <unordered_map>
 
-#include "exec_events.hpp"
+#include "console/input_console.hpp"
 #include "misc.hpp"
 
 class executor
@@ -39,8 +39,11 @@ public:
 		res.first->second.last_seen = get_timestamp_s();
 	}
 
+	void on_key_pressed(char key);
+
 private:
 	executor() {}
+	void close();
 
 	struct error_info
 	{
@@ -49,4 +52,6 @@ private:
 	};
 
 	std::unordered_map<std::string, error_info> error_log;
+
+	input_console in_console;
 };

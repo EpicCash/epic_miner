@@ -1,11 +1,9 @@
 #pragma once 
 
-#include <uv.h>
 #include <assert.h>
 #include <functional>
 #include <string>
-
-extern uv_loop_t* uv_loop;
+#include "uv.hpp"
 
 class net_interface
 {

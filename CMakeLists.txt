@@ -19,9 +19,6 @@ file(GLOB randomx randomx/src/*.cpp randomx/src/*.c randomx/src/blake2/*.c rando
 file(GLOB SRCFILES *.cpp net/*.cpp console/*.cpp)
 
 add_executable(epic_miner ${SRCFILES} ${randomx})
-target_include_directories(epic_miner PUBLIC randomx/src)
-target_link_libraries(epic_miner Threads::Threads {OPENSSL_LIBRARIES})
-
 target_include_directories(epic_miner SYSTEM BEFORE PUBLIC libuv/include)
 target_include_directories(epic_miner PUBLIC randomx/src rapidjson/include .)
 

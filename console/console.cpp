@@ -96,7 +96,7 @@ int get_key()
 	return ch;
 }
 
-void set_colour(out_colours& cl)
+void set_colour(out_colours cl)
 {
 	switch(cl)
 	{
