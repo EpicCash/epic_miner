@@ -3,8 +3,8 @@
 
 void input_console::on_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf)
 {
-	if(nread < 0) 
-		uv_close(reinterpret_cast<uv_handle_t*>(stream), nullptr);
+	if(nread < 0)
+		reinterpret_cast<input_console*>(stream->data)->close();
 	else if(nread == 1) 
 		executor::inst().on_key_pressed(*buf->base);
 }

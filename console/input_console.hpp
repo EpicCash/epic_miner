@@ -26,6 +26,7 @@ public:
 		uv_tty_init(uv_loop, &console, stdin_fd, 1);
 		if(!uv_is_readable(reinterpret_cast<uv_stream_t*>(&console))) 
 		{
+			console.data = nullptr;
 			uv_close(reinterpret_cast<uv_handle_t*>(&console), nullptr);
 			return false;
 		}
@@ -33,6 +34,16 @@ public:
 		uv_tty_set_mode(&console, UV_TTY_MODE_RAW);
 		uv_read_start(reinterpret_cast<uv_stream_t*>(&console), console_buffer, on_read);
 		return true;
+	}
+
+	void close()
+	{
+		if(console.data != nullptr)
+		{
+			console.data = nullptr;
+			uv_tty_reset_mode();
+			uv_close(reinterpret_cast<uv_handle_t*>(&console), nullptr);
+		}
 	}
 
 	static void on_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf);

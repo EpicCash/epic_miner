@@ -24,3 +24,24 @@ struct pool_job
 	std::atomic<uint32_t> nonce;
 	pow_type type;
 };
+
+struct miner_job
+{
+	miner_job(pool_job& job) : nonce(job.nonce)
+	{
+		memcpy(jobid, job.jobid, sizeof(jobid));
+		memcpy(blob, job.blob, sizeof(blob));
+		memcpy(randomx_seed, job.randomx_seed, sizeof(randomx_seed));
+		blob_len = job.blob_len;
+		target = job.target;
+		type = job.type;
+	}
+
+	char jobid[64];
+	uint8_t blob[512];
+	uint8_t randomx_seed[32]; // TODO: replace with central dataset
+	uint32_t blob_len;
+	uint32_t target;
+	std::atomic<uint32_t>& nonce;
+	pow_type type;
+};

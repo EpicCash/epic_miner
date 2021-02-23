@@ -1,8 +1,9 @@
 #include "pool.hpp"
+#include "executor.hpp"
 #include "console/console.hpp"
-#include "encdec.hpp"
+#include "misc.hpp"
 
-pool::pool() : domAlloc(json_dom_buf, json_buffer_len),
+pool::pool(uint32_t pool_id) : pool_id(pool_id), domAlloc(json_dom_buf, json_buffer_len),
 	parseAlloc(json_parse_buf, json_buffer_len),
 	jsonDoc(&domAlloc, json_buffer_len, &parseAlloc)
 {
@@ -10,6 +11,33 @@ pool::pool() : domAlloc(json_dom_buf, json_buffer_len),
 
 void pool::net_on_connect(const char* tls_fp)
 {
+	printf("net_on_connect\n");
+	do_login_call();
+}
+
+void pool::do_login_call()
+{
+	uint32_t call_id;
+	register_call(call_types::login, call_id);
+
+	constexpr const char* format_str = "{\"method\":\"login\",\"params\":"
+		"{\"login\":\"%s\",\"pass\":\"%s\",\"rigid\":\"%s\",\"agent\":\"%s\"},\"id\":%u}\n";
+	if(tls)
+	{
+		char cmd_buffer[1024];
+		uint32_t len = snprintf(cmd_buffer, sizeof(cmd_buffer), format_str,
+			 username.c_str(), password.c_str(), rigid.c_str(), "epic_miner", call_id);
+		net->do_socket_write(cmd_buffer, len);
+	}
+	else
+	{
+		uint32_t idx;
+		uint32_t buflen;
+		char* buffer = net->get_send_buffer(buflen, idx);
+		uint32_t len = snprintf(buffer, buflen, format_str, 
+			username.c_str(), password.c_str(), rigid.c_str(), "epic_miner", call_id);
+		net->finalize_socket_write(idx, len);
+	}
 }
 
 // It is in glibc, but not on msvc
@@ -156,6 +184,8 @@ bool pool::process_pool_job(const Value& param)
 	}
 
 	my_job.blob_len = work_len;
+
+	executor::inst().on_pool_new_job(pool_id);
 	return true;
 }
 

@@ -1,8 +1,9 @@
 #pragma once
-#include <mutex>
+#include <list>
 #include <functional>
 #include <unordered_map>
 
+#include "pool.hpp"
 #include "console/input_console.hpp"
 #include "misc.hpp"
 
@@ -40,10 +41,13 @@ public:
 	}
 
 	void on_key_pressed(char key);
+	void on_pool_new_job(uint32_t pool_id);
 
 private:
 	executor() {}
 	void close();
+
+	void on_heartbeat();
 
 	struct error_info
 	{
@@ -53,5 +57,9 @@ private:
 
 	std::unordered_map<std::string, error_info> error_log;
 
+	std::vector<std::unique_ptr<pool>> pools;
+
 	input_console in_console;
+
+	uv_timer_t heartbeat_timer;
 };
