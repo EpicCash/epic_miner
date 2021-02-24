@@ -17,7 +17,9 @@ void executor::on_pool_new_job(uint32_t pool_id)
 {
 	printf("pool %u has a new job!\n", pool_id);
 	miner_job bcast(pools[0]->get_pool_job());
-	miner_job t = bcast;
+	std::optional<miner_job> t(bcast);
+	printf("%u\n", t.has_value());
+	//miner_job t = bcast;
 }
 
 void executor::close()
@@ -35,6 +37,7 @@ void executor::run()
 {
 	uv_loop = uv_default_loop();
 	in_console.init_console();
+	push_idle_job();
 
 	uv_timer_init(uv_loop, &heartbeat_timer);
 	uv_timer_start(&heartbeat_timer, [](uv_timer_t*) { 

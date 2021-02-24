@@ -5,6 +5,7 @@
 
 enum class pow_type : uint32_t
 {
+	idle,
 	randomx,
 	progpow,
 	cuckoo
@@ -27,7 +28,15 @@ struct pool_job
 
 struct miner_job
 {
-	miner_job(pool_job& job) : nonce(job.nonce)
+	miner_job()
+	{
+		type = pow_type::idle;
+		nonce = nullptr;
+		blob_len = 0;
+		target = 0;
+	}
+
+	miner_job(pool_job& job)
 	{
 		memcpy(jobid, job.jobid, sizeof(jobid));
 		memcpy(blob, job.blob, sizeof(blob));
@@ -35,6 +44,7 @@ struct miner_job
 		blob_len = job.blob_len;
 		target = job.target;
 		type = job.type;
+		nonce = &job.nonce;
 	}
 
 	char jobid[64];
@@ -42,6 +52,6 @@ struct miner_job
 	uint8_t randomx_seed[32]; // TODO: replace with central dataset
 	uint32_t blob_len;
 	uint32_t target;
-	std::atomic<uint32_t>& nonce;
+	std::atomic<uint32_t>* nonce;
 	pow_type type;
 };

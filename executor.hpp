@@ -3,6 +3,7 @@
 #include <functional>
 #include <unordered_map>
 
+#include "dataset.hpp"
 #include "pool.hpp"
 #include "console/input_console.hpp"
 #include "misc.hpp"
@@ -43,11 +44,22 @@ public:
 	void on_key_pressed(char key);
 	void on_pool_new_job(uint32_t pool_id);
 
+	inline miner_job* get_current_job()
+	{
+		return current_job.load(std::memory_order_relaxed);
+	}
+
 private:
 	executor() {}
 	void close();
 
 	void on_heartbeat();
+
+	void push_idle_job()
+	{
+		miner_jobs.emplace_front();
+		current_job = &miner_jobs.front();
+	}
 
 	struct error_info
 	{
@@ -58,6 +70,12 @@ private:
 	std::unordered_map<std::string, error_info> error_log;
 
 	std::vector<std::unique_ptr<pool>> pools;
+
+	std::vector<dataset> randomx_datasets;
+	// miner_job is immutable, once the atomic pointer is set
+	// the threads can copy it without locks
+	std::list<miner_job> miner_jobs;
+	std::atomic<miner_job*> current_job;
 
 	input_console in_console;
 
