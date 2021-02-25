@@ -179,7 +179,7 @@ bool pool::process_pool_job(const Value& param)
 
 	if(seed_hash != nullptr && seed_hash->IsString() && seed_hash->GetStringLength() == 64u)
 	{
-		if(!hex2bin(seed_hash->GetString(), seed_hash->GetStringLength(), my_job.randomx_seed))
+		if(!hex2bin(seed_hash->GetString(), seed_hash->GetStringLength(), my_job.randomx_seed.data))
 			return protocol_error("PARSE error: Invalid seed_hash");
 	}
 

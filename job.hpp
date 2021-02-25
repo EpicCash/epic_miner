@@ -2,6 +2,8 @@
 
 #include <inttypes.h>
 #include <atomic>
+#include "vector32.hpp"
+#include "dataset.hpp"
 
 enum class pow_type : uint32_t
 {
@@ -19,8 +21,9 @@ struct pool_job
 
 	char jobid[64];
 	uint8_t blob[512];
-	uint8_t randomx_seed[32];
+	v32 randomx_seed;
 	uint32_t blob_len;
+	uint32_t nonce_pos;
 	uint32_t target;
 	std::atomic<uint32_t> nonce;
 	pow_type type;
@@ -36,12 +39,12 @@ struct miner_job
 		target = 0;
 	}
 
-	miner_job(pool_job& job)
+	miner_job(pool_job& job, dataset* ds) : ds(ds)
 	{
 		memcpy(jobid, job.jobid, sizeof(jobid));
 		memcpy(blob, job.blob, sizeof(blob));
-		memcpy(randomx_seed, job.randomx_seed, sizeof(randomx_seed));
 		blob_len = job.blob_len;
+		nonce_pos = job.nonce_pos;
 		target = job.target;
 		type = job.type;
 		nonce = &job.nonce;
@@ -49,9 +52,10 @@ struct miner_job
 
 	char jobid[64];
 	uint8_t blob[512];
-	uint8_t randomx_seed[32]; // TODO: replace with central dataset
 	uint32_t blob_len;
+	uint32_t nonce_pos;
 	uint32_t target;
+	dataset* ds;
 	std::atomic<uint32_t>* nonce;
 	pow_type type;
 };

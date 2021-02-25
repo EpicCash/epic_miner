@@ -16,10 +16,27 @@ void executor::on_key_pressed(char key)
 void executor::on_pool_new_job(uint32_t pool_id)
 {
 	printf("pool %u has a new job!\n", pool_id);
-	miner_job bcast(pools[0]->get_pool_job());
-	std::optional<miner_job> t(bcast);
-	printf("%u\n", t.has_value());
-	//miner_job t = bcast;
+	pool_job& job = pools[pool_id]->get_pool_job();
+	if(job.type == pow_type::randomx && job.randomx_seed.get_id() != randomx_dataset.get_dataset_id())
+	{
+		printf("Calculating dataset %zx!\n", job.randomx_seed.get_id());
+		push_idle_job();
+		randomx_dataset.calculate_dataset(job.randomx_seed);
+		return;
+	}
+	push_pool_job(job);
+}
+
+void executor::on_dataset_ready()
+{
+	printf("Dataset ready %zx!\n", randomx_dataset.get_dataset_id());
+	pool_job& job = pools[0]->get_pool_job();
+	push_pool_job(job);
+}
+
+void executor::on_found_result()
+{
+	
 }
 
 void executor::close()

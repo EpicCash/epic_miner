@@ -43,6 +43,8 @@ public:
 
 	void on_key_pressed(char key);
 	void on_pool_new_job(uint32_t pool_id);
+	void on_dataset_ready();
+	void on_found_result();
 
 	inline miner_job* get_current_job()
 	{
@@ -61,6 +63,12 @@ private:
 		current_job = &miner_jobs.front();
 	}
 
+	void push_pool_job(pool_job& job)
+	{
+		miner_jobs.emplace_front(job, &randomx_dataset);
+		current_job = &miner_jobs.front();
+	}
+
 	struct error_info
 	{
 		int64_t last_seen;
@@ -71,7 +79,8 @@ private:
 
 	std::vector<std::unique_ptr<pool>> pools;
 
-	std::vector<dataset> randomx_datasets;
+	dataset randomx_dataset;
+
 	// miner_job is immutable, once the atomic pointer is set
 	// the threads can copy it without locks
 	std::list<miner_job> miner_jobs;

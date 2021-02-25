@@ -26,5 +26,6 @@ private:
 	miner_job* last_job = nullptr;
 	miner_job current_job;
 
+	uv_async_t async;
 	executor& exec;
 };

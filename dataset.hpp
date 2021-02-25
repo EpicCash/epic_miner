@@ -1,3 +1,9 @@
+#pragma once
+
+#include "uv.hpp"
+#include "vector32.hpp"
+#include <thread>
+
 #include "randomx/src/intrin_portable.h"
 #include "randomx/src/dataset.hpp"
 #include "randomx/src/vm_compiled.hpp"
@@ -9,19 +15,20 @@ struct dataset
 {
 	dataset()
 	{
+		id = 0;
 		ch = randomx_alloc_cache((randomx_flags)(RANDOMX_FLAG_JIT));
 		ds = randomx_alloc_dataset((randomx_flags)(0));
 	}
+
+	dataset(const dataset&) = delete;
+	dataset(dataset&&) = delete;
+	dataset& operator=(const dataset&) = delete;
+	dataset& operator=(dataset&&) = delete;
 
 	~dataset()
 	{
 		randomx_release_dataset(ds);
 		randomx_release_cache(ch);
-	}
-
-	void init(const uint8_t* seed, size_t key_size)
-	{
-		randomx_init_cache(ch, seed, key_size);
 	}
 
 	uint64_t get_dataset_hash(size_t i) const
@@ -33,13 +40,20 @@ struct dataset
 		return hash;
 	}
 
-	void calculate(size_t idx, size_t thd_cnt)
-	{
-		size_t work_size = randomx_dataset_item_count();
-		size_t batch_size = work_size / thd_cnt;
-		randomx_init_dataset(ds, ch, idx*batch_size, idx == thd_cnt-1 ? (batch_size+work_size%thd_cnt) : batch_size);
-	}
+	void calculate_dataset(const v32& seed);
+	uint64_t get_dataset_id();
+
+	randomx_dataset* get_dataset() { return ds; }
+
+private:
+	void calculate_thd(size_t idx, size_t thd_cnt);
+	void dataset_thd_main();
 
 	randomx_cache* ch;
-	randomx_dataset* ds; 
+	randomx_dataset* ds;
+	v32 seed;
+	uint64_t id;
+
+	std::thread dscalc;
+	uv_async_t async;
 };
