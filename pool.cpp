@@ -40,6 +40,38 @@ void pool::do_login_call()
 	}
 }
 
+void pool::do_send_result(const result& res)
+{
+	uint32_t call_id;
+	register_call(call_types::result, call_id);
+
+	char sNonce[9];
+	char sResult[65];
+	bin2hex((unsigned char*)&res.nonce, 4, sNonce);
+	bin2hex(res.res_hash.data, 32, sResult);
+
+	constexpr const char* format_str = "{\"method\":\"submit\",\"params\":"
+		"{\"id\":\"%s\",\"job_id\":\"%s\",\"nonce\":\"%s\",\"result\":\"%s\"},\"id\":%u}\n";
+
+	if(tls)
+	{
+		char cmd_buffer[1024];
+		uint32_t len = snprintf(cmd_buffer, sizeof(cmd_buffer), format_str,
+								pool_miner_id.c_str(), res.id.data, sNonce, sResult, call_id);
+		net->do_socket_write(cmd_buffer, len);
+	}
+	else
+	{
+		uint32_t idx;
+		uint32_t buflen;
+		char* buffer = net->get_send_buffer(buflen, idx);
+		uint32_t len = snprintf(buffer, buflen, format_str, 
+								pool_miner_id.c_str(), res.id.data, sNonce, sResult, call_id);
+		printf("SEND: %s", buffer);
+		net->finalize_socket_write(idx, len);
+	}
+}
+
 // It is in glibc, but not on msvc
 inline char* my_memrchr(char* m, char c, size_t n)
 {
@@ -62,6 +94,7 @@ ssize_t pool::net_on_data_recv(char* data, size_t len)
 	domAlloc.Clear();
 	jsonDoc.SetNull();
 
+	printf("RECV: %s\n", data);
 	if(jsonDoc.ParseInsitu(data).HasParseError() || !jsonDoc.IsObject())
 	{
 		net_on_error("JSON parse error");
@@ -156,9 +189,9 @@ bool pool::process_pool_job(const Value& param)
 	my_job.reset();
 
 	size_t jobid_len = jobid->GetStringLength();
-	if(jobid_len >= sizeof(pool_job::jobid)) // Note >=
+	if(jobid_len >= sizeof(jobid::data)) // Note >=
 		return protocol_error("PARSE error: Job error 3");
-	memcpy(my_job.jobid, jobid->GetString(), jobid_len+1);
+	memcpy(my_job.id.data, jobid->GetString(), jobid_len+1);
 
 	uint32_t work_len = blob->GetStringLength() / 2;
 	
@@ -183,6 +216,8 @@ bool pool::process_pool_job(const Value& param)
 			return protocol_error("PARSE error: Invalid seed_hash");
 	}
 
+	my_job.type = pow_type::randomx;
+	my_job.nonce_pos = work_len - 4;
 	my_job.blob_len = work_len;
 
 	executor::inst().on_pool_new_job(pool_id);
@@ -215,6 +250,7 @@ bool pool::process_pool_result(lpcJsVal value, const char* err_msg)
 		return protocol_error("err_msg");
 	}
 
+	printf("process_pool_result - ok!\n");
 	return true;
 }
 

@@ -6,7 +6,16 @@ miner::miner(size_t thd_id) :
 {
 	async.data = this;
 	uv_async_init(uv_loop, &async, [](uv_async_t* handle) {
-		
+		miner* ths = reinterpret_cast<miner*>(handle->data);
+		std::unique_lock<std::mutex> lock(ths->queue_mtx);
+		while(!ths->result_q.empty())
+		{
+			result res = ths->result_q.front();
+			ths->result_q.pop_front();
+			lock.unlock();
+			executor::inst().on_found_result(res);
+			lock.lock();
+		}
 	});
 }
 
@@ -37,6 +46,15 @@ void miner::randomx_loop()
 		randomx_calculate_hash(v, current_job.blob, current_job.blob_len, job_hash.data);
 		if(job_hash.get_work32() < current_job.target)
 		{
+			char blob[1024];
+			bin2hex(current_job.blob, current_job.blob_len, blob);
+			char hash[65];
+			bin2hex(job_hash.data, 32, hash);
+			printf("blob: %s %u\nhash: %s - %.8x\n", blob, current_job.blob_len, hash, current_job.target);
+			std::unique_lock<std::mutex> lock(queue_mtx);
+			result_q.emplace_back(current_job.id, nonce_ptr[0], job_hash);
+			lock.unlock();
+			uv_async_send(&async);
 		}
 	}
 	randomx_destroy_vm(v);
@@ -54,7 +72,7 @@ void miner::thread_main()
 		case pow_type::idle:
 			idle_loop();
 			break;
-		case pow_type::randomx;
+		case pow_type::randomx:
 			randomx_loop();
 			break;
 		case pow_type::progpow:

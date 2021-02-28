@@ -13,6 +13,7 @@ void executor::on_key_pressed(char key)
 	printf("key: %.2x\n", (uint32_t)key);
 }
 
+bool dataset_done = false;
 void executor::on_pool_new_job(uint32_t pool_id)
 {
 	printf("pool %u has a new job!\n", pool_id);
@@ -24,7 +25,8 @@ void executor::on_pool_new_job(uint32_t pool_id)
 		randomx_dataset.calculate_dataset(job.randomx_seed);
 		return;
 	}
-	push_pool_job(job);
+	if(dataset_done)
+		push_pool_job(job);
 }
 
 void executor::on_dataset_ready()
@@ -32,11 +34,12 @@ void executor::on_dataset_ready()
 	printf("Dataset ready %zx!\n", randomx_dataset.get_dataset_id());
 	pool_job& job = pools[0]->get_pool_job();
 	push_pool_job(job);
+	dataset_done = true;
 }
 
-void executor::on_found_result()
+void executor::on_found_result(const result& res)
 {
-	
+	pools[0]->do_send_result(res);
 }
 
 void executor::close()
@@ -55,6 +58,8 @@ void executor::run()
 	uv_loop = uv_default_loop();
 	in_console.init_console();
 	push_idle_job();
+
+	miners.emplace_back(std::make_unique<miner>(0));
 
 	uv_timer_init(uv_loop, &heartbeat_timer);
 	uv_timer_start(&heartbeat_timer, [](uv_timer_t*) { 

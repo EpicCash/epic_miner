@@ -27,12 +27,12 @@ struct v32
 
 	uint32_t get_work32() const
 	{
-		return *reinterpret_cast<const uint32_t*>(data);
+		return __builtin_bswap32(*reinterpret_cast<const uint32_t*>(data));
 	}
 
 	uint64_t get_work64() const
 	{
-		return *reinterpret_cast<const uint64_t*>(data);
+		return __builtin_bswap64(*reinterpret_cast<const uint64_t*>(data));
 	}
 
 	uint64_t get_id() const

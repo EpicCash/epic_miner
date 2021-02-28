@@ -41,7 +41,7 @@ struct dataset
 	}
 
 	void calculate_dataset(const v32& seed);
-	uint64_t get_dataset_id();
+	uint64_t get_dataset_id() { return seed.get_id(); }
 
 	randomx_dataset* get_dataset() { return ds; }
 

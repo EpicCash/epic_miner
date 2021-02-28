@@ -5,6 +5,7 @@
 
 #include "dataset.hpp"
 #include "pool.hpp"
+#include "miner.hpp"
 #include "console/input_console.hpp"
 #include "misc.hpp"
 
@@ -44,7 +45,7 @@ public:
 	void on_key_pressed(char key);
 	void on_pool_new_job(uint32_t pool_id);
 	void on_dataset_ready();
-	void on_found_result();
+	void on_found_result(const result& res);
 
 	inline miner_job* get_current_job()
 	{
@@ -81,6 +82,7 @@ private:
 
 	dataset randomx_dataset;
 
+	std::vector<std::unique_ptr<miner>> miners;
 	// miner_job is immutable, once the atomic pointer is set
 	// the threads can copy it without locks
 	std::list<miner_job> miner_jobs;

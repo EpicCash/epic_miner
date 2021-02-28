@@ -62,6 +62,8 @@ public:
 		return my_job;
 	}
 
+	void do_send_result(const result& res);
+
 private:
 	enum class call_types : uint32_t
 	{
@@ -150,6 +152,7 @@ private:
 				mp.time_made = get_timestamp_ms();
 				call_id = g_call_id;
 				mp.call_id = g_call_id;
+				g_call_id++;
 				return true;
 			}
 		}

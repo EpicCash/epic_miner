@@ -3,6 +3,8 @@
 #include <inttypes.h>
 #include <thread>
 #include <atomic>
+#include <mutex>
+#include <list>
 
 #include "job.hpp"
 
@@ -25,6 +27,9 @@ private:
 	std::atomic<bool> run;
 	miner_job* last_job = nullptr;
 	miner_job current_job;
+
+	std::mutex queue_mtx;
+	std::list<result> result_q;
 
 	uv_async_t async;
 	executor& exec;
