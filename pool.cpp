@@ -11,7 +11,18 @@ pool::pool(uint32_t pool_id) : pool_id(pool_id), domAlloc(json_dom_buf, json_buf
 
 void pool::net_on_connect(const char* tls_fp)
 {
-	printf("net_on_connect\n");
+	printer::inst().print(K_MAGENTA, "Connected to ", hostname.c_str());
+	if(tls_fp != nullptr)
+	{
+		printer::inst().print(K_BLUE, "TLS Fingerprint: ", tls_fp);
+		if(this->tls_fp.size() > 0 && this->tls_fp != tls_fp) 
+		{
+			net_on_error("TLS Fingerprint verification failed");
+			return;
+		}
+	}
+
+	state = pool_state::connected;
 	do_login_call();
 }
 
@@ -22,6 +33,7 @@ void pool::do_login_call()
 
 	constexpr const char* format_str = "{\"method\":\"login\",\"params\":"
 		"{\"login\":\"%s\",\"pass\":\"%s\",\"rigid\":\"%s\",\"agent\":\"%s\"},\"id\":%u}\n";
+
 	if(tls)
 	{
 		char cmd_buffer[1024];
@@ -216,6 +228,7 @@ bool pool::process_pool_job(const Value& param)
 			return protocol_error("PARSE error: Invalid seed_hash");
 	}
 
+	state = pool_state::has_job;
 	my_job.type = pow_type::randomx;
 	my_job.nonce_pos = work_len - 4;
 	my_job.blob_len = work_len;
@@ -266,8 +279,15 @@ bool pool::process_pool_keepalive(lpcJsVal, const char* err_msg)
 
 void pool::net_on_error(const char* error)
 {
+	printer::inst().print(K_RED, "Pool error [", hostname.c_str(),"] : ", error);
+	do_disconnect();
+	state = pool_state::idle;
+	my_job.reset();
 }
 
 void pool::net_on_close()
 {
+	printer::inst().print(K_MAGENTA, "Pool ", hostname.c_str(), " disconnected.");
+	state = pool_state::idle;
+	my_job.reset();
 }

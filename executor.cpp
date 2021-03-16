@@ -45,12 +45,39 @@ void executor::on_found_result(const result& res)
 void executor::close()
 {
 	in_console.close();
-	exit(0);
+	quick_exit(0);
 }
 
 void executor::on_heartbeat()
 {
-	printf("on_heartbeat\n");
+	uint64_t connected_pools = 0;
+	uint64_t connecting_pools = 0;
+	for(auto& pl : pools)
+	{
+		pool::pool_state st = pl->get_pool_state();
+		if(st == pool::pool_state::connected)
+		{
+			connected_pools++;
+			pl->check_call_timeouts();
+		}
+
+		if(st == pool::pool_state::connecting)
+			connecting_pools++;
+	}
+
+	if(connected_pools == 0 && connecting_pools == 0)
+	{
+		int64_t time_now = get_timestamp_ms();
+		for(auto& pl : pools)
+		{
+			pool::pool_state st = pl->get_pool_state();
+			if(st == pool::pool_state::idle && time_now - pl->get_last_connect_attempt() > 10000)
+			{
+				pl->do_connect();
+				break;
+			}
+		}
+	}
 }
 
 void executor::run()
@@ -67,8 +94,7 @@ void executor::run()
 		}, 0, 1000);
 
 	pools.emplace_back(std::make_unique<pool>(0));
-	pools[0]->init_pool("localhost:3333", false, "user", "pass");
-	pools[0]->do_connect();
+	pools[0]->init_pool("localhost:3333", false, "", "user", "pass", "");
 
 	uv_run(uv_loop, UV_RUN_DEFAULT);
 }

@@ -244,6 +244,8 @@ void tls_interface::do_socket_write(const char* data, int len)
 
 void tls_interface::do_shutdown()
 {
+	if(shutting_down)
+		return;
 	SSL_shutdown(ssl);
 	flush_tls_pending();
 	net_interface::do_shutdown();

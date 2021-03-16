@@ -7,14 +7,23 @@
 #include "job.hpp"
 #include "net/net_interface.hpp"
 #include "net/tls_interface.hpp"
+#include "console/console.hpp"
 #include <stdio.h>
 
 class pool
 {
 public:
+	enum class pool_state : uint32_t
+	{
+		idle = 0,
+		connecting = 1,
+		connected = 2,
+		has_job = 3
+	};
+
 	pool(uint32_t pool_id);
 
-	bool init_pool(const char* hostname, bool use_tls, const char* username, const char* password)
+	bool init_pool(const char* hostname, bool use_tls, const char* tls_fp, const char* username, const char* password, const char* rigid)
 	{
 		using namespace std::placeholders;
 		tls = use_tls;
@@ -24,6 +33,7 @@ public:
 												  std::bind(&pool::net_on_data_recv, this, _1, _2),
 												  std::bind(&pool::net_on_error, this, _1),
 												  std::bind(&pool::net_on_close, this));
+			this->tls_fp = tls_fp;
 		}
 		else
 		{
@@ -36,15 +46,25 @@ public:
 		if(!net->set_hostname(hostname))
 			return false;
 
+		this->hostname = hostname;
 		this->username = username;
 		this->password = password;
+		this->rigid = rigid;
 		return true;
 	}
 
 	void do_connect()
 	{
+		printer::inst().print(K_MAGENTA, "Connecting to ", hostname.c_str());
+		state = pool_state::connecting;
 		flush_call_map();
+		last_connect_attempt = get_timestamp_ms();
 		net->do_connect();
+	}
+
+	void do_disconnect()
+	{
+		net->do_shutdown();
 	}
 
 	void check_call_timeouts()
@@ -53,7 +73,10 @@ public:
 		for(const call_mapping& mp : call_map)
 		{
 			if(mp.type != call_types::invalid && ts - mp.time_made > 10000)
+			{
+				net_on_error("call timeout");
 				return;
+			}
 		}
 	}
 
@@ -63,6 +86,16 @@ public:
 	}
 
 	void do_send_result(const result& res);
+
+	pool_state get_pool_state()
+	{
+		return state;
+	}
+
+	int64_t get_last_connect_attempt()
+	{
+		return last_connect_attempt;
+	}
 
 private:
 	enum class call_types : uint32_t
@@ -88,19 +121,24 @@ private:
 
 	bool protocol_error(const char* err)
 	{
-		printf("error: %s\n", err);
+		printer::inst().print(K_RED, "Pool error [", hostname.c_str(),"] : ", err);
 		return false;
 	}
 
 	uint32_t pool_id;
+	pool_state state;
 
 	std::unique_ptr<net_interface> net;
 	bool tls;
 
+	std::string hostname;
 	std::string pool_miner_id;
 	std::string username;
 	std::string password;
 	std::string rigid;
+	std::string tls_fp;
+
+	int64_t last_connect_attempt = 0;
 
 	constexpr static size_t json_buffer_len = 4 * 1024;
 	char json_parse_buf[json_buffer_len];

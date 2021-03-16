@@ -170,9 +170,9 @@ bool net_interface::consume_loop(const data_consumer_t& consume, char* buffer, u
 	while(true)
 	{
 		ssize_t cd = consume(buffer+consumed, recv_pos-consumed);
-		assert(cd <= recv_pos-consumed);
 		if(cd < 0)
 			return false;
+		assert(cd <= recv_pos-consumed);
 		consumed += cd;
 		// Break if all data has been consumed, or consume_data didn't consume anything
 		if(cd == 0 || recv_pos == consumed)
