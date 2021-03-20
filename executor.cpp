@@ -10,7 +10,15 @@ void executor::on_key_pressed(char key)
 	if(key == 0x03)
 		close();
 
-	printf("key: %.2x\n", (uint32_t)key);
+	switch(key)
+	{
+		case 'h':
+		case 'r':
+			print_hashrate_report();
+			break;
+		default:
+			break;
+	}
 }
 
 bool dataset_done = false;
@@ -50,6 +58,7 @@ void executor::close()
 
 void executor::on_heartbeat()
 {
+	// Connection managment
 	uint64_t connected_pools = 0;
 	uint64_t connecting_pools = 0;
 	for(auto& pl : pools)
@@ -78,6 +87,11 @@ void executor::on_heartbeat()
 			}
 		}
 	}
+
+	// Hashrate managment
+	int64_t time_now = get_timestamp_ms();
+	for(auto& mt : miners)
+		mt->record_hashes(time_now);
 }
 
 void executor::run()

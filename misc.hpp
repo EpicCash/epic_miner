@@ -57,3 +57,42 @@ inline void bin2hex(const unsigned char* in, unsigned int len, char* out)
 	}
 	out[len*2] = '\0';
 }
+
+template <typename T, size_t N>
+class ring_buffer
+{
+public:
+	ring_buffer() noexcept { }
+	
+	inline void insert(const T& val) noexcept
+	{
+		data[pos] = val;
+		pos = (pos+1) % N;
+	}
+
+	inline T& operator[](size_t idx) noexcept
+	{
+		idx = (pos - idx - 1) % N;
+		return data[idx];
+	}
+
+	inline const T& operator[](size_t idx) const noexcept
+	{
+		idx = (pos - idx - 1) % N;
+		return data[idx];
+	}
+	
+	inline void fill(const T& val) noexcept
+	{
+		data.fill(val);
+	}
+	
+	inline size_t size() const noexcept
+	{
+		return N;
+	}
+	
+private:
+	size_t pos = 0;
+	std::array<T, N> data;
+};
