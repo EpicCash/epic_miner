@@ -55,7 +55,7 @@ public:
 
 	void do_connect()
 	{
-		printer::inst().print(K_MAGENTA, "Connecting to ", hostname.c_str());
+		printer::inst().print(K_BLUE, "Connecting to ", hostname.c_str());
 		state = pool_state::connecting;
 		flush_call_map();
 		last_connect_attempt = get_timestamp_ms();
@@ -116,7 +116,6 @@ private:
 	bool process_json_doc();
 	bool process_pool_job(const Value& param);
 	bool process_pool_login(lpcJsVal value, const char* err_msg);
-	bool process_pool_result(lpcJsVal value, const char* err_msg);
 	bool process_pool_keepalive(lpcJsVal, const char* err_msg);
 
 	bool protocol_error(const char* err)
@@ -158,6 +157,9 @@ private:
 
 	uint32_t g_call_id;
 	call_mapping call_map[8];
+
+	uint32_t ping_call_id = -1;
+	int64_t ping_timestamp = -1;
 
 	void flush_call_map()
 	{

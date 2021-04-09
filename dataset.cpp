@@ -6,12 +6,15 @@
 
 void dataset::calculate_dataset(const v32& seed)
 {
+	ready = false;
 	this->seed = seed;
 	this->id = seed.get_id();
 
 	async.data = this;
 	uv_async_init(uv_loop, &async, [](uv_async_t* handle) {
-		reinterpret_cast<dataset*>(handle->data)->dscalc.join();
+		dataset* ths = reinterpret_cast<dataset*>(handle->data);
+		ths->dscalc.join();
+		ths->ready = true;
 		uv_close(reinterpret_cast<uv_handle_t*>(handle), nullptr);
 		executor::inst().on_dataset_ready();
 	});

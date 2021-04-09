@@ -96,3 +96,25 @@ private:
 	size_t pos = 0;
 	std::array<T, N> data;
 };
+
+struct human_ts
+{
+	human_ts(int64_t ts_sec)
+	{
+		secs = ts_sec % 60;
+		ts_sec -= secs;
+		mins = ts_sec % (60*60);
+		ts_sec -= mins;
+		hrs = ts_sec % (60*60*24);
+		ts_sec -= hrs;
+		days = ts_sec;
+		mins /= 60;
+		hrs  /= 60*60;
+		days /= 24*60*60;
+	}
+	
+	uint32_t days;
+	uint32_t hrs;
+	uint32_t mins;
+	uint32_t secs;
+};

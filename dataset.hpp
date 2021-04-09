@@ -15,6 +15,7 @@ struct dataset
 {
 	dataset()
 	{
+		ready = false;
 		id = 0;
 		ch = randomx_alloc_cache((randomx_flags)(RANDOMX_FLAG_JIT));
 		ds = randomx_alloc_dataset((randomx_flags)(0));
@@ -31,17 +32,9 @@ struct dataset
 		randomx_release_cache(ch);
 	}
 
-	uint64_t get_dataset_hash(size_t i) const
-	{
-		uint64_t hash = 0;
-		const uint64_t* pds = reinterpret_cast<const uint64_t*>(randomx_get_dataset_memory(ds));
-		for(size_t i=0; i < DatasetSize/sizeof(uint64_t); i++)
-			hash ^= pds[i];
-		return hash;
-	}
-
 	void calculate_dataset(const v32& seed);
 	uint64_t get_dataset_id() { return seed.get_id(); }
+	bool is_dataset_ready(uint64_t id) { return seed.get_id() == id && ready; }
 
 	randomx_dataset* get_dataset() { return ds; }
 
@@ -53,6 +46,7 @@ private:
 	randomx_dataset* ds;
 	v32 seed;
 	uint64_t id;
+	bool ready;
 
 	std::thread dscalc;
 	uv_async_t async;

@@ -11,7 +11,7 @@ pool::pool(uint32_t pool_id) : pool_id(pool_id), domAlloc(json_dom_buf, json_buf
 
 void pool::net_on_connect(const char* tls_fp)
 {
-	printer::inst().print(K_MAGENTA, "Connected to ", hostname.c_str());
+	printer::inst().print(K_BLUE, "Connected to ", hostname.c_str());
 	if(tls_fp != nullptr)
 	{
 		printer::inst().print(K_BLUE, "TLS Fingerprint: ", tls_fp);
@@ -57,6 +57,9 @@ void pool::do_send_result(const result& res)
 	uint32_t call_id;
 	register_call(call_types::result, call_id);
 
+	ping_call_id = call_id;
+	ping_timestamp = get_timestamp_ms();
+
 	char sNonce[9];
 	char sResult[65];
 	bin2hex((unsigned char*)&res.nonce, 4, sNonce);
@@ -79,7 +82,7 @@ void pool::do_send_result(const result& res)
 		char* buffer = net->get_send_buffer(buflen, idx);
 		uint32_t len = snprintf(buffer, buflen, format_str, 
 								pool_miner_id.c_str(), res.id.data, sNonce, sResult, call_id);
-		printf("SEND: %s", buffer);
+		printer::inst().print_dbg("SEND: %s", buffer);
 		net->finalize_socket_write(idx, len);
 	}
 }
@@ -106,7 +109,7 @@ ssize_t pool::net_on_data_recv(char* data, size_t len)
 	domAlloc.Clear();
 	jsonDoc.SetNull();
 
-	printf("RECV: %s\n", data);
+	printer::inst().print_dbg("RECV: %s\n", data);
 	if(jsonDoc.ParseInsitu(data).HasParseError() || !jsonDoc.IsObject())
 	{
 		net_on_error("JSON parse error");
@@ -176,9 +179,16 @@ bool pool::process_json_doc()
 		case call_types::login:
 			return process_pool_login(mt, error_msg);
 		case call_types::result:
-			return process_pool_result(mt, error_msg);;
+		{
+			int64_t ts_now = get_timestamp_ms();
+			uint64_t ping = 0;
+			if(ping_call_id == call_id && ts_now > ping_timestamp)
+				ping = (ts_now - ping_timestamp) / 2;
+			executor::inst().on_result_reply(my_job.target, error_msg, ping);
+			return true;
+		}
 		case call_types::keepalive:
-			return process_pool_keepalive(mt, error_msg);;
+			return process_pool_keepalive(mt, error_msg);
 		}
 	}
 }
@@ -256,17 +266,6 @@ bool pool::process_pool_login(lpcJsVal value, const char* err_msg)
 	return process_pool_job(*job);
 }
 
-bool pool::process_pool_result(lpcJsVal value, const char* err_msg)
-{
-	if(err_msg != nullptr)
-	{
-		return protocol_error("err_msg");
-	}
-
-	printf("process_pool_result - ok!\n");
-	return true;
-}
-
 bool pool::process_pool_keepalive(lpcJsVal, const char* err_msg)
 {
 	if(err_msg != nullptr)
@@ -287,7 +286,7 @@ void pool::net_on_error(const char* error)
 
 void pool::net_on_close()
 {
-	printer::inst().print(K_MAGENTA, "Pool ", hostname.c_str(), " disconnected.");
+	printer::inst().print(K_BLUE, "Pool ", hostname.c_str(), " disconnected.");
 	state = pool_state::idle;
 	my_job.reset();
 }

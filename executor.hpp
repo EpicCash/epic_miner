@@ -48,6 +48,7 @@ public:
 
 	void on_dataset_ready();
 	void on_found_result(const result& res);
+	void on_result_reply(uint32_t target, const char* error, uint64_t ping_ms);
 
 	inline miner_job* get_current_job()
 	{
@@ -62,15 +63,15 @@ private:
 
 	void push_idle_job()
 	{
-		session_timestamp = 0;
+		pool_ctr.reset();
 		miner_jobs.emplace_front();
 		current_job = &miner_jobs.front();
 	}
 
 	void push_pool_job(pool_job& job)
 	{
-		if(session_timestamp == 0)
-			session_timestamp = get_timestamp_s();
+		if(pool_ctr.session_timestamp == 0)
+			pool_ctr.session_timestamp = get_timestamp_s();
 		miner_jobs.emplace_front(job, &randomx_dataset);
 		current_job = &miner_jobs.front();
 	}
@@ -119,6 +120,27 @@ private:
 		return peak_hps;
 	}
 
+	inline void print_accpted_share(uint32_t diff, uint64_t ping_ms)
+	{
+		double hps = 0;
+		for(int i = 0; i < miners.size(); i++)
+			hps += get_hashrate(i, 10);
+
+		if(hps > 0)
+		{
+			printer::inst().print(out_colours::K_GREEN, "Share accepted (", pool_ctr.accepted_shares_cnt, 
+						out_colours::K_RED, "/", pool_ctr.rejected_shares_cnt, ") ",
+						out_colours::K_YELLOW, hps, " H/s",
+						out_colours::K_BLUE, " diff: ", diff, " ping: ", ping_ms);
+		}
+		else
+		{
+			printer::inst().print(out_colours::K_GREEN, "Share accepted (", pool_ctr.accepted_shares_cnt, 
+						out_colours::K_RED, "/", pool_ctr.rejected_shares_cnt, ")",
+						out_colours::K_BLUE, " diff: ", diff, " ping: ", ping_ms);
+		}
+	}
+
 	inline void print_hashrate_report()
 	{
 		std::string msg;
@@ -129,8 +151,8 @@ private:
 		msg += "\n| THD | 10s cur. | 60s avg. | 10m avg. | 60m avg. |   Peak   | Session avg. |\n";
 		
 		int64_t session_time = 0;
-		if(session_timestamp != 0)
-			session_time = get_timestamp_s() - session_timestamp;
+		if(pool_ctr.session_timestamp != 0)
+			session_time = get_timestamp_s() - pool_ctr.session_timestamp;
 		
 		if(session_time > 24*60*60)
 			session_time = 24*60*60;
@@ -172,13 +194,113 @@ private:
 		printer::inst().print_nt(msg.data());
 	}
 
+	inline void print_uptime()
+	{
+		if(pool_ctr.session_timestamp == 0)
+		{
+			printer::inst().print(out_colours::K_BLUE, "Session uptime: 00d 00h:00m:00s");
+			return;
+		}
+		
+		char buffer[128];
+		int64_t session_time = get_timestamp_s() - pool_ctr.session_timestamp;
+		human_ts ts(session_time);
+		snprintf(buffer, sizeof(buffer),"%02dd %02dh:%02dm:%02ds", ts.days, ts.hrs, ts.mins, ts.secs);
+		
+		printer::inst().print_nt(out_colours::K_BLUE, "Session uptime: ", buffer);
+	}
+	
+	inline void print_share_totals()
+	{
+		printer::inst().print_nt(out_colours::K_GREEN, "Accepted shares: ", pool_ctr.accepted_shares_cnt, " total diff. shares: ", pool_ctr.total_diff);
+		printer::inst().print_nt(out_colours::K_RED, "Rejected shares: ", pool_ctr.rejected_shares_cnt);
+	}
+
+	inline void print_error_log()
+	{
+		if(error_log.size() == 0)
+		{
+			printer::inst().print_nt(out_colours::K_GREEN, "No errors to report.");
+			return;
+		}
+		
+		std::string msg;
+		msg.reserve(80*3 + error_log.size() * 320);
+		msg.append("ERROR LOG\n");
+		msg.append(79, '-');
+		msg.append("\n| ");
+		msg.append(28, ' ');
+		msg.append("Error");
+		msg.append(28, ' ');
+		msg.append("|  Last seen   |\n|");
+		msg.append(62, ' ');
+		msg.append("|    Count     |\n");
+		msg.append(79, '-');
+		msg.append("\n");
+		
+		char buf[128];
+		int64_t cur_timestemp = get_timestamp_s();
+		for(const auto& e : error_log)
+		{
+			bool long_in = false;
+			human_ts ts(cur_timestemp - e.second.last_seen);
+			const char* input = e.first.c_str();
+			if(e.first.length() > 120)
+			{
+				snprintf(buf, sizeof(buf), "| %-60.60s |              |\n", input);
+				input += 60;
+				msg.append(buf);
+				long_in = true;
+			}
+			
+			snprintf(buf, sizeof(buf), "| %-60.60s | %03dh:%02dm:%02ds |\n", input, ts.days*24+ts.hrs, ts.mins, ts.secs);
+			input += 60;
+			msg.append(buf);
+			snprintf(buf, sizeof(buf), "| %-60.60s |     %04lu     |\n", input, e.second.count);
+			msg.append(buf);
+			
+			if(long_in)
+			{
+				if(e.first.length() > 180)
+				{
+					input += 60;
+					snprintf(buf, sizeof(buf), "| %-60.60s |              |\n", input);
+					msg.append(buf);
+				}
+				else
+					msg.append("|                                                              |              |\n");
+			}
+			msg.append(79, '-');
+			msg.append(1, '\n');
+		}
+		printer::inst().print_nt(msg.c_str());
+	}
+
+	struct session_counters_t
+	{
+		session_counters_t() { reset(); }
+
+		int64_t session_timestamp;
+		uint64_t accepted_shares_cnt;
+		uint64_t rejected_shares_cnt;
+		uint64_t total_diff;
+
+		void reset()
+		{
+			session_timestamp = 0;
+			accepted_shares_cnt = 0;
+			rejected_shares_cnt = 0;
+			total_diff = 0;
+		}
+	};
+
+	session_counters_t pool_ctr;
+
 	struct error_info
 	{
 		int64_t last_seen;
 		size_t count=1;
 	};
-
-	int64_t session_timestamp = 0;
 
 	std::unordered_map<std::string, error_info> error_log;
 
