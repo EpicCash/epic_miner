@@ -15,8 +15,10 @@ struct hash_rec
 {
 	hash_rec() : time(0), hashes(0) {}
 	hash_rec(int64_t time, uint64_t hashes) : time(time), hashes(hashes) {}
+	// if the time value are negative it means we are on idle boundary
+	// time between two negative time values should not be counted towards h/r
 	int64_t time;
-	uint64_t hashes;
+	int64_t hashes;
 };
 
 typedef ring_buffer<hash_rec, 8192> hashlog_t;
@@ -30,8 +32,11 @@ public:
 	void stop_miner() { run = false; }
 
 	void record_hashes(int64_t time_now) 
-	{ 
-		uint64_t cnt = hash_count.load(std::memory_order_relaxed);
+	{
+		bool hashing = is_hashing.load(std::memory_order_relaxed);
+		int64_t cnt = hash_count.load(std::memory_order_relaxed);
+		if(!hashing)
+			time_now = -time_now;
 		hash_log.insert(hash_rec(time_now, cnt));
 	}
 
@@ -41,6 +46,7 @@ public:
 	}
 
 private:
+
 	void thread_main();
 
 	void idle_loop();
@@ -57,7 +63,8 @@ private:
 	uv_async_t async;
 	executor& exec;
 
-	std::atomic<uint64_t> hash_count;
+	std::atomic<bool> is_hashing;
+	std::atomic<int64_t> hash_count;
 	hashlog_t hash_log;
 
 	std::thread main_thread;

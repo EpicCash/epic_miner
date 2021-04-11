@@ -61,8 +61,17 @@ private:
 
 	void on_heartbeat();
 
+	void record_miner_hashes()
+	{
+		// Hashrate managment
+		int64_t time_now = get_timestamp_ms();
+		for(auto& mt : miners)
+			mt->record_hashes(time_now);
+	}
+
 	void push_idle_job()
 	{
+		record_miner_hashes();
 		pool_ctr.reset();
 		miner_jobs.emplace_front();
 		current_job = &miner_jobs.front();
@@ -70,6 +79,7 @@ private:
 
 	void push_pool_job(pool_job& job)
 	{
+		record_miner_hashes();
 		if(pool_ctr.session_timestamp == 0)
 			pool_ctr.session_timestamp = get_timestamp_s();
 		miner_jobs.emplace_front(job, &randomx_dataset);
@@ -82,14 +92,25 @@ private:
 			return 0;
 
 		const hashlog_t& hash_log = miners[thd_idx]->get_hash_log();
-		for(size_t i = 0; i < hash_log.size(); i++)
+		if(hash_log[0].time == 0)
+			return 0;
+
+		uint64_t hash_count = 0;
+		uint64_t time_count_ms = 0;
+		for(size_t i = 1; i < hash_log.size(); i++)
 		{
 			if(hash_log[i].time == 0)
 				break;
-			
-			size_t delta = hash_log[0].time - hash_log[i].time;
-			if(delta > period_s * 1000)
-				return (double(hash_log[0].hashes - hash_log[i].hashes) / double(delta))*1000.0;
+
+			if(hash_log[i-1].time > 0 && hash_log[i].time > 0)
+			{
+				int64_t time_delta = hash_log[i-1].time - hash_log[i].time;
+				time_count_ms += uint64_t(time_delta);
+				hash_count += uint64_t(hash_log[i-1].hashes - hash_log[i].hashes);
+
+				if(time_count_ms > period_s * 1000)
+					return (double(hash_count) / double(time_count_ms))*1000.0;
+			}
 		}
 		return 0;
 	}

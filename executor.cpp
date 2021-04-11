@@ -41,6 +41,8 @@ void executor::on_pool_new_job(uint32_t pool_id)
 	if(job.type == pow_type::randomx && !randomx_dataset.is_dataset_ready(job.randomx_seed.get_id()))
 		return;
 
+	uint32_t diff = (job.target > 0 ? (0xffffffff / job.target) : 0xffffffff);
+	printer::inst().print(out_colours::K_BLUE, "Mining ", pow_type_to_str(job.type), " PoW, diff: ", diff);
 	push_pool_job(job);
 }
 
@@ -112,10 +114,7 @@ void executor::on_heartbeat()
 		}
 	}
 
-	// Hashrate managment
-	int64_t time_now = get_timestamp_ms();
-	for(auto& mt : miners)
-		mt->record_hashes(time_now);
+	record_miner_hashes();
 }
 
 void executor::run()

@@ -195,20 +195,35 @@ bool pool::process_json_doc()
 
 bool pool::process_pool_job(const Value& param)
 {
-	lpcJsVal blob, jobid, target, motd, seed_hash;
+	lpcJsVal blob, jobid, target, motd, pow_algo, seed_hash;
 	jobid = GetObjectMember(param, "job_id");
 	blob = GetObjectMember(param, "blob");
 	target = GetObjectMember(param, "target");
 	motd = GetObjectMember(param, "motd");
+	pow_algo = GetObjectMember(param, "pow_algo");
 	seed_hash = GetObjectMember(param, "seed_hash");
-	
-	if(jobid == nullptr || blob == nullptr || target == nullptr ||
-		!jobid->IsString() || !blob->IsString() || !target->IsString())
+
+	if(jobid == nullptr || blob == nullptr || target == nullptr || pow_algo == nullptr ||
+		!jobid->IsString() || !blob->IsString() || !target->IsString() || !pow_algo->IsString())
 	{
 		return protocol_error("PARSE error: Job error 1");
 	}
 
 	my_job.reset();
+
+	const char* pow_algo_s = pow_algo->GetString();
+	if(strcmp(pow_algo_s, "randomx") == 0)
+		my_job.type = pow_type::randomx;
+	else if(strcmp(pow_algo_s, "progpow") == 0)
+		my_job.type = pow_type::progpow;
+	else if(strcmp(pow_algo_s, "cuckoo") == 0)
+		my_job.type = pow_type::cuckoo;
+	else
+	{
+		std::string error("Unknown algorithm: ");
+		error += pow_algo_s;
+		return protocol_error(error.c_str());
+	}
 
 	size_t jobid_len = jobid->GetStringLength();
 	if(jobid_len >= sizeof(jobid::data)) // Note >=
@@ -232,6 +247,9 @@ bool pool::process_pool_job(const Value& param)
 	if(!hex2bin(sTempStr, 8, (unsigned char*)&my_job.target) || my_job.target == 0)
 		return protocol_error("PARSE error: Invalid target");
 
+	if(my_job.type == pow_type::randomx && seed_hash == nullptr)
+		return protocol_error("PARSE error: Missing seed_hash");
+
 	if(seed_hash != nullptr && seed_hash->IsString() && seed_hash->GetStringLength() == 64u)
 	{
 		if(!hex2bin(seed_hash->GetString(), seed_hash->GetStringLength(), my_job.randomx_seed.data))
@@ -239,7 +257,6 @@ bool pool::process_pool_job(const Value& param)
 	}
 
 	state = pool_state::has_job;
-	my_job.type = pow_type::randomx;
 	my_job.nonce_pos = work_len - 4;
 	my_job.blob_len = work_len;
 
@@ -289,4 +306,13 @@ void pool::net_on_close()
 	printer::inst().print(K_BLUE, "Pool ", hostname.c_str(), " disconnected.");
 	state = pool_state::idle;
 	my_job.reset();
+}
+
+bool pool::protocol_error(const char* err)
+{
+	std::string error = "Pool error [" + hostname + "] : ";
+	error += err;
+	printer::inst().print(K_RED, error);
+	executor::inst().log_error(std::move(error));
+	return false;
 }

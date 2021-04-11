@@ -2,7 +2,7 @@
 #include "executor.hpp"
 
 miner::miner(size_t thd_id) :
-	thd_id(thd_id), run(true), exec(executor::inst()), hash_count(0)
+ 	thd_id(thd_id), run(true), exec(executor::inst()), is_hashing(false), hash_count(0)
 {
 	async.data = this;
 	uv_async_init(uv_loop, &async, [](uv_async_t* handle) {
@@ -38,6 +38,7 @@ void miner::randomx_loop()
 	*nonce_ptr = 0;
 	v32 job_hash;
 
+	is_hashing = true;
 	while(exec.get_current_job() == last_job)
 	{
 		if(*nonce_ptr % nonce_chunk == 0)
@@ -56,6 +57,8 @@ void miner::randomx_loop()
 
 		hash_count.fetch_add(1, std::memory_order_relaxed);
 	}
+	is_hashing = false;
+
 	randomx_destroy_vm(v);
 }
 

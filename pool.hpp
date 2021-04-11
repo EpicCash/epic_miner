@@ -118,11 +118,7 @@ private:
 	bool process_pool_login(lpcJsVal value, const char* err_msg);
 	bool process_pool_keepalive(lpcJsVal, const char* err_msg);
 
-	bool protocol_error(const char* err)
-	{
-		printer::inst().print(K_RED, "Pool error [", hostname.c_str(),"] : ", err);
-		return false;
-	}
+	bool protocol_error(const char* err);
 
 	uint32_t pool_id;
 	pool_state state;
