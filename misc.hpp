@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <array>
 #include <inttypes.h>
 
 inline int64_t get_timestamp_s()

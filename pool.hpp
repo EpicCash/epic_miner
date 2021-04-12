@@ -26,6 +26,13 @@ public:
 	bool init_pool(const char* hostname, bool use_tls, const char* tls_fp, const char* username, const char* password, const char* rigid)
 	{
 		using namespace std::placeholders;
+#ifdef BUILD_NO_OPENSSL
+		tls = false;
+		net = std::make_unique<net_interface>(std::bind(&pool::net_on_connect, this, _1), 
+											  std::bind(&pool::net_on_data_recv, this, _1, _2),
+											  std::bind(&pool::net_on_error, this, _1),
+											  std::bind(&pool::net_on_close, this));
+#else
 		tls = use_tls;
 		if(use_tls)
 		{
@@ -42,6 +49,7 @@ public:
 												  std::bind(&pool::net_on_error, this, _1),
 												  std::bind(&pool::net_on_close, this));
 		}
+#endif
 
 		if(!net->set_hostname(hostname))
 			return false;

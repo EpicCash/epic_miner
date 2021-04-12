@@ -2,8 +2,14 @@
 
 #include <functional>
 #include <stdint.h>
+#ifdef _MSC_VER
+#include <intrin.h>
+#define __builtin_bswap32 _byteswap_ulong
+#define __builtin_bswap64 _byteswap_uint64
+#else
 #pragma GCC target("sse4.1")
 #include <x86intrin.h>
+#endif
 
 struct v32
 {

@@ -1,3 +1,7 @@
+#ifdef _WIN32
+#include <Windows.h>
+#endif
+
 #include "console.hpp"
 
 #include <cstdlib>
@@ -6,7 +10,6 @@
 #include <string.h>
 
 #ifdef _WIN32
-#include <windows.h>
 
 int get_key()
 {
@@ -28,8 +31,8 @@ int get_key()
 
 void set_colour(out_colours cl)
 {
+	fflush(stdout);
 	WORD attr = 0;
-	
 	switch(cl)
 	{
 		case K_RED:
@@ -56,12 +59,12 @@ void set_colour(out_colours cl)
 		default:
 			break;
 	}
-	
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), attr);
 }
 
 void reset_colour()
 {
+	fflush(stdout);
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
 }
 
@@ -71,7 +74,7 @@ void win_exit(int code)
 	getenv_s(&envSize, nullptr, 0, "EPIC_NOWAIT");
 	if(envSize == 0)
 	{
-		printer::inst()->print_str("Press any key to exit.");
+		printer::inst().print_str("Press any key to exit.");
 		get_key();
 	}
 	std::exit(code);

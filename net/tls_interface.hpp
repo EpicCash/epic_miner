@@ -1,5 +1,5 @@
 #pragma once
-
+#ifndef BUILD_NO_OPENSSL
 #include "net_interface.hpp"
 
 #include <openssl/err.h>
@@ -44,3 +44,4 @@ protected:
 	char pt_buf[4096];
 	uint32_t pt_pos = 0;
 };
+#endif

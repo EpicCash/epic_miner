@@ -3,7 +3,8 @@
 #include "console/console.hpp"
 #include "misc.hpp"
 
-pool::pool(uint32_t pool_id) : pool_id(pool_id), domAlloc(json_dom_buf, json_buffer_len),
+pool::pool(uint32_t pool_id) : pool_id(pool_id), state(pool_state::idle),
+	domAlloc(json_dom_buf, json_buffer_len),
 	parseAlloc(json_parse_buf, json_buffer_len),
 	jsonDoc(&domAlloc, json_buffer_len, &parseAlloc)
 {

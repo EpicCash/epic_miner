@@ -1,3 +1,4 @@
+#ifndef BUILD_NO_OPENSSL
 #include "tls_interface.hpp"
 #include <string.h>
 
@@ -269,3 +270,4 @@ void tls_interface::on_socket_closed()
 	pt_pos = 0;
 	net_interface::on_socket_closed();
 }
+#endif
