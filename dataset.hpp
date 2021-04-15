@@ -9,6 +9,8 @@
 #include "randomx/src/vm_compiled.hpp"
 #include "randomx/src/blake2/blake2.h"
 
+#include "console/console.hpp"
+
 constexpr uint64_t DatasetSize = RANDOMX_DATASET_BASE_SIZE + RANDOMX_DATASET_EXTRA_SIZE;
 
 struct dataset
@@ -17,14 +19,35 @@ struct dataset
 	{
 		ready = false;
 		id = 0;
-		ch = randomx_alloc_cache((randomx_flags)(RANDOMX_FLAG_JIT));
-		ds = randomx_alloc_dataset((randomx_flags)(0));
+
+		if(!try_alloc_dataset((randomx_flags)(RANDOMX_FLAG_LARGE_PAGES | RANDOMX_FLAG_JIT)))
+		{
+			if(!try_alloc_dataset((randomx_flags)RANDOMX_FLAG_JIT))
+			{
+				printer::inst().print(out_colours::K_RED, "Failed to allocate RandomX dataset (not enough RAM).");
+				exit(0);
+			}
+		}
 	}
 
 	dataset(const dataset&) = delete;
 	dataset(dataset&&) = delete;
 	dataset& operator=(const dataset&) = delete;
 	dataset& operator=(dataset&&) = delete;
+
+	inline bool try_alloc_dataset(randomx_flags fl)
+	{
+		ds = randomx_alloc_dataset(fl);
+		if(ds == nullptr)
+			return false;
+		ch = randomx_alloc_cache(fl);
+		if(ch == nullptr)
+		{
+			randomx_release_dataset(ds);
+			return false;
+		}
+		return true;
+	}
 
 	~dataset()
 	{

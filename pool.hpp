@@ -116,7 +116,7 @@ private:
 
 	void net_on_connect(const char* tls_fp);
 	ssize_t net_on_data_recv(char* data, size_t len);
-	void net_on_error(const char* error);
+	void net_on_error(const char* err);
 	void net_on_close();
 
 	void do_login_call();

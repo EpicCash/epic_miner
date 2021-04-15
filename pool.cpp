@@ -294,9 +294,13 @@ bool pool::process_pool_keepalive(lpcJsVal, const char* err_msg)
 	return true;
 }
 
-void pool::net_on_error(const char* error)
+void pool::net_on_error(const char* err)
 {
-	printer::inst().print(K_RED, "Pool error [", hostname.c_str(),"] : ", error);
+	std::string error = "Pool error [" + hostname + "] : ";
+	error += err;
+	printer::inst().print(K_RED, error);
+	executor::inst().log_error(std::move(error));
+
 	do_disconnect();
 	state = pool_state::idle;
 	my_job.reset();

@@ -1,0 +1,2 @@
+#pragma once
+#define EPIC_MINER_VERSION "@EPIC_MINER_VERSION@"

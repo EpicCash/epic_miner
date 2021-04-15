@@ -13,6 +13,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -maes -msse4")
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 find_package(OpenSSL 1.1 REQUIRED)
+find_package(Git QUIET)
 
 enable_language(ASM)
 
@@ -28,3 +29,12 @@ target_link_libraries(epic_miner Threads::Threads OpenSSL::SSL uv_a randomx)
 if(MSVC)
     target_link_libraries(epic_miner crypt32.lib)
 endif()
+
+add_custom_target(version
+	${CMAKE_COMMAND} -D SRC=${CMAKE_SOURCE_DIR}/epic_miner_version.h.in
+		-D DST=${CMAKE_BINARY_DIR}/epic_miner_version.h
+		-D GIT_EXECUTABLE=${GIT_EXECUTABLE}
+		-P ${CMAKE_SOURCE_DIR}/cmake/GenerateVersionHeader.cmake)
+
+add_dependencies(epic_miner version)
+target_include_directories(epic_miner PUBLIC ${CMAKE_BINARY_DIR})

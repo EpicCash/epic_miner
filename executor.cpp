@@ -1,6 +1,7 @@
 #include "console/console.hpp"
 #include "executor.hpp"
 #include "uv.hpp"
+#include "epic_miner_version.h"
 #include <stdio.h>
 
 uv_loop_t* uv_loop = nullptr;
@@ -14,10 +15,14 @@ void executor::on_key_pressed(char key)
 	{
 		case 'h':
 		case 'r':
+			printer::inst().print_nt("\n********************************************");
+			printer::inst().print_nt("Epic Miner " EPIC_MINER_VERSION);
+			printer::inst().print_nt("********************************************\n");
 			print_hashrate_report();
 			print_uptime();
 			print_share_totals();
 			print_error_log();
+			printer::inst().print_nt("\n");
 			break;
 		default:
 			break;
