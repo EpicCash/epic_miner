@@ -23,11 +23,12 @@ add_executable(epic_miner ${SRCFILES} ${randomx})
 target_include_directories(epic_miner SYSTEM BEFORE PUBLIC libuv/include)
 target_include_directories(epic_miner PUBLIC randomx/src rapidjson/include .)
 target_include_directories(epic_miner PUBLIC ${OPENSSL_INCLUDE_DIR})
-target_compile_definitions(epic_miner PUBLIC NOMINMAX)
 
 target_link_libraries(epic_miner Threads::Threads OpenSSL::SSL uv_a randomx)
+
 if(MSVC)
-    target_link_libraries(epic_miner crypt32.lib)
+	target_compile_definitions(epic_miner PUBLIC NOMINMAX)
+	target_link_libraries(epic_miner crypt32.lib)
 endif()
 
 add_custom_target(version
