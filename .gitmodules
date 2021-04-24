@@ -8,3 +8,6 @@
 	path = libuv
 	url = https://github.com/libuv/libuv.git
 	shallow = true
+[submodule "ethash"]
+	path = ethash
+	url = https://github.com/chfast/ethash
