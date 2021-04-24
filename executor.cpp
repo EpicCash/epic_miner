@@ -2,6 +2,7 @@
 #include "executor.hpp"
 #include "uv.hpp"
 #include "epic_miner_version.h"
+#include "rx_miner.hpp"
 #include <stdio.h>
 
 uv_loop_t* uv_loop = nullptr;
@@ -128,7 +129,7 @@ void executor::run()
 	in_console.init_console();
 	push_idle_job();
 
-	miners.emplace_back(std::make_unique<miner>(0));
+	miners.emplace_back(std::make_unique<rx_cpu_miner>(0));
 
 	uv_timer_init(uv_loop, &heartbeat_timer);
 	uv_timer_start(&heartbeat_timer, [](uv_timer_t*) { 

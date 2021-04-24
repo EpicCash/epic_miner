@@ -27,7 +27,7 @@ class miner
 {
 public:
 	miner(size_t thd_id);
-	~miner() { main_thread.join(); }
+	virtual ~miner() { main_thread.join(); }
 
 	void stop_miner() { run = false; }
 
@@ -45,12 +45,9 @@ public:
 		return hash_log;
 	}
 
-private:
-
-	void thread_main();
-
+protected:
+	virtual void thread_main() = 0;
 	void idle_loop();
-	void randomx_loop();
 
 	size_t thd_id;
 	std::atomic<bool> run;
