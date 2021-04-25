@@ -6,6 +6,7 @@
 #include <mutex>
 #include <list>
 
+#include "uv.hpp"
 #include "job.hpp"
 #include "misc.hpp"
 
@@ -44,6 +45,8 @@ public:
 	{
 		return hash_log;
 	}
+
+	bool dataset_check_loop();
 
 protected:
 	virtual void thread_main() = 0;

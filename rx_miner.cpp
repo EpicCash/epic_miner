@@ -3,8 +3,14 @@
 
 void rx_cpu_miner::randomx_loop()
 {
+	rx_dataset& ds = *reinterpret_cast<rx_dataset*>(current_job.ds);
+
+	if(!dataset_check_loop())
+		return;
+
+	std::shared_lock<std::shared_timed_mutex> lk(ds.mtx);
 	randomx_flags fl = (randomx_flags)(RANDOMX_FLAG_FULL_MEM | RANDOMX_FLAG_JIT | RANDOMX_FLAG_HARD_AES);
-	randomx_vm* v = randomx_create_vm(fl, nullptr, current_job.ds->get_dataset());
+	randomx_vm* v = randomx_create_vm(fl, nullptr, ds.get_dataset());
 	uint32_t* nonce_ptr = reinterpret_cast<uint32_t*>(current_job.blob + current_job.nonce_pos);
 	*nonce_ptr = 0;
 	v32 job_hash;
@@ -39,22 +45,11 @@ void rx_cpu_miner::thread_main()
 	{
 		last_job = exec.get_current_job();
 		current_job = *last_job;
-		
-		switch(current_job.type)
-		{
-			case pow_type::idle:
-				idle_loop();
-				break;
-			case pow_type::randomx:
-				randomx_loop();
-				break;
-			case pow_type::progpow:
-				idle_loop();
-				break;
-			case pow_type::cuckoo:
-				idle_loop();
-				break;
-		}
+
+		if(current_job.type == pow_type::randomx)
+			randomx_loop();
+		else
+			idle_loop();
 	}
 }
 

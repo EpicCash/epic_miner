@@ -33,30 +33,11 @@ void executor::on_key_pressed(char key)
 void executor::on_pool_new_job(uint32_t pool_id)
 {
 	printer::inst().print_dbg("pool %u has a new job!\n", pool_id);
-
 	pool_job& job = pools[pool_id]->get_pool_job();
-	if(job.type == pow_type::randomx && job.randomx_seed.get_id() != randomx_dataset.get_dataset_id())
-	{
-		printer::inst().print(out_colours::K_MAGENTA, "Calculating dataset... Mining will resume soon...");
-		printer::inst().print_dbg("Calculating dataset %zx!\n", job.randomx_seed.get_id());
-		push_idle_job();
-		randomx_dataset.calculate_dataset(job.randomx_seed);
-		return;
-	}
-
-	if(job.type == pow_type::randomx && !randomx_dataset.is_dataset_ready(job.randomx_seed.get_id()))
-		return;
-
 	uint32_t diff = (job.target > 0 ? (0xffffffff / job.target) : 0xffffffff);
 	printer::inst().print(out_colours::K_BLUE, "Mining ", pow_type_to_str(job.type), " PoW, diff: ", diff);
-	push_pool_job(job);
-}
-
-void executor::on_dataset_ready()
-{
-	printer::inst().print_dbg("Dataset ready %zx!\n", randomx_dataset.get_dataset_id());
-	printer::inst().print(out_colours::K_MAGENTA, "Dataset calculation finished.");
-	pool_job& job = pools[0]->get_pool_job();
+	if(job.type == pow_type::randomx)
+		randomx_dataset.adjust_to_seed(job.randomx_seed);
 	push_pool_job(job);
 }
 

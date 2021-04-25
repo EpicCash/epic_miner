@@ -2,6 +2,7 @@
 
 #include <inttypes.h>
 #include <atomic>
+#include <string.h>
 #include "vector32.hpp"
 #include "dataset.hpp"
 
@@ -59,7 +60,7 @@ struct miner_job
 		target = 0;
 	}
 
-	miner_job(pool_job& job, dataset* ds) : id(job.id), ds(ds)
+	miner_job(pool_job& job, dataset* ds, uint64_t dataset_id) : id(job.id), ds(ds), dataset_id(dataset_id)
 	{
 		memcpy(blob, job.blob, sizeof(blob));
 		blob_len = job.blob_len;
@@ -75,6 +76,7 @@ struct miner_job
 	uint32_t nonce_pos;
 	uint32_t target;
 	dataset* ds;
+	uint64_t dataset_id;
 	std::atomic<uint32_t>* nonce;
 	pow_type type;
 };

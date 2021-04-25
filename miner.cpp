@@ -22,6 +22,16 @@ miner::miner(size_t thd_id) :
 	main_thread = std::thread(&miner::thread_main, this);
 }
 
+bool miner::dataset_check_loop()
+{
+	while(current_job.ds->ready_id != current_job.dataset_id)
+	{
+		if(exec.get_current_job() != last_job)
+			return false;
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	}
+	return true;
+}
 void miner::idle_loop()
 {
 	while(exec.get_current_job() == last_job)
