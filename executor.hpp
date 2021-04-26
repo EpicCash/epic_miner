@@ -47,6 +47,7 @@ public:
 	void on_key_pressed(char key);
 
 	void on_pool_new_job(uint32_t pool_id);
+	void on_pool_disconnect(uint32_t pool_id);
 
 	void on_found_result(const miner_result& res);
 	void on_result_reply(uint32_t target, const char* error, uint64_t ping_ms);

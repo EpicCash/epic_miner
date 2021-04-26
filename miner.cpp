@@ -19,7 +19,8 @@ miner::miner(size_t thd_id) :
 	});
 
 	hash_log.fill(hash_rec());
-	main_thread = std::thread(&miner::thread_main, this);
+	// lambda wrapper is needed for some compilers since thread_main is pure virtual
+	main_thread = std::thread([](miner* ths){ ths->thread_main(); }, this);
 }
 
 bool miner::dataset_check_loop()
@@ -32,6 +33,7 @@ bool miner::dataset_check_loop()
 	}
 	return true;
 }
+
 void miner::idle_loop()
 {
 	while(exec.get_current_job() == last_job)

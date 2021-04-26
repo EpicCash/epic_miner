@@ -54,6 +54,15 @@ void executor::on_pool_new_job(uint32_t pool_id)
 	current_job = &miner_jobs.front();
 }
 
+void executor::on_pool_disconnect(uint32_t pool_id)
+{
+	if(current_job.load()->type != pow_type::idle)
+	{
+		printer::inst().print(out_colours::K_MAGENTA, "Pool connection lost. Idling threads.");
+		push_idle_job();
+	}
+}
+
 void executor::on_found_result(const miner_result& res)
 {
 	pools[0]->do_send_result(res);

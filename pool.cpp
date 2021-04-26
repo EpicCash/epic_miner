@@ -55,6 +55,9 @@ void pool::do_login_call()
 
 void pool::do_send_result(const miner_result& res)
 {
+	if(state != pool_state::has_job)
+		return;
+
 	uint32_t call_id;
 	register_call(call_types::result, call_id);
 
@@ -259,6 +262,7 @@ bool pool::process_pool_job(const Value& param)
 	state = pool_state::has_job;
 	my_job.nonce_pos = work_len - 4;
 	my_job.blob_len = work_len;
+	my_job.nonce = 0;
 
 	executor::inst().on_pool_new_job(pool_id);
 	return true;
@@ -310,6 +314,7 @@ void pool::net_on_close()
 	printer::inst().print(K_BLUE, "Pool ", hostname.c_str(), " disconnected.");
 	state = pool_state::idle;
 	my_job.reset();
+	executor::inst().on_pool_disconnect(pool_id);
 }
 
 bool pool::protocol_error(const char* err)
