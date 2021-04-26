@@ -3,6 +3,8 @@ project(epic_miner)
 
 add_subdirectory(libuv)
 add_subdirectory(randomx)
+set(include_dir ${PROJECT_SOURCE_DIR}/ethash/include)
+add_subdirectory(ethash/lib)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -24,7 +26,7 @@ target_include_directories(epic_miner SYSTEM BEFORE PUBLIC libuv/include)
 target_include_directories(epic_miner PUBLIC randomx/src rapidjson/include .)
 target_include_directories(epic_miner PUBLIC ${OPENSSL_INCLUDE_DIR})
 
-target_link_libraries(epic_miner Threads::Threads OpenSSL::SSL uv_a randomx)
+target_link_libraries(epic_miner Threads::Threads OpenSSL::SSL uv_a randomx keccak ethash)
 
 if(MSVC)
 	target_compile_definitions(epic_miner PUBLIC NOMINMAX)

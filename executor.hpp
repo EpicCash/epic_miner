@@ -3,11 +3,13 @@
 #include <functional>
 #include <unordered_map>
 
-#include "rx_dataset.hpp"
 #include "pool.hpp"
 #include "miner.hpp"
 #include "console/input_console.hpp"
 #include "misc.hpp"
+
+#include "rx_dataset.hpp"
+#include "pp_dataset.hpp"
 
 class executor
 {
@@ -46,7 +48,7 @@ public:
 
 	void on_pool_new_job(uint32_t pool_id);
 
-	void on_found_result(const result& res);
+	void on_found_result(const miner_result& res);
 	void on_result_reply(uint32_t target, const char* error, uint64_t ping_ms);
 
 	inline miner_job* get_current_job()
@@ -73,15 +75,6 @@ private:
 		record_miner_hashes();
 		pool_ctr.reset();
 		miner_jobs.emplace_front();
-		current_job = &miner_jobs.front();
-	}
-
-	void push_pool_job(pool_job& job)
-	{
-		record_miner_hashes();
-		if(pool_ctr.session_timestamp == 0)
-			pool_ctr.session_timestamp = get_timestamp_s();
-		miner_jobs.emplace_front(job, &randomx_dataset, job.randomx_seed.get_id());
 		current_job = &miner_jobs.front();
 	}
 
@@ -327,6 +320,7 @@ private:
 	std::vector<std::unique_ptr<pool>> pools;
 
 	rx_dataset randomx_dataset;
+	pp_dataset progpow_dataset;
 
 	std::vector<std::unique_ptr<miner>> miners;
 	// miner_job is immutable, once the atomic pointer is set

@@ -43,6 +43,7 @@ struct pool_job
 	jobid id;
 	uint8_t blob[512];
 	v32 randomx_seed;
+	uint32_t height;
 	uint32_t blob_len;
 	uint32_t nonce_pos;
 	uint32_t target;
@@ -68,6 +69,7 @@ struct miner_job
 		target = job.target;
 		type = job.type;
 		nonce = &job.nonce;
+		height = job.height;
 	}
 
 	jobid id;
@@ -77,13 +79,14 @@ struct miner_job
 	uint32_t target;
 	dataset* ds;
 	uint64_t dataset_id;
+	uint32_t height;
 	std::atomic<uint32_t>* nonce;
 	pow_type type;
 };
 
-struct result
+struct miner_result
 {
-	result(const jobid& id, uint32_t nonce, const v32& res_hash) : id(id), nonce(nonce), res_hash(res_hash) {}
+	miner_result(const jobid& id, uint32_t nonce, const v32& res_hash) : id(id), nonce(nonce), res_hash(res_hash) {}
 	jobid id;
 	uint32_t nonce;
 	v32 res_hash;

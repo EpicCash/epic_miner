@@ -93,7 +93,7 @@ public:
 		return my_job;
 	}
 
-	void do_send_result(const result& res);
+	void do_send_result(const miner_result& res);
 
 	pool_state get_pool_state()
 	{

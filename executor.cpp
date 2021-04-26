@@ -2,6 +2,7 @@
 #include "executor.hpp"
 #include "uv.hpp"
 #include "epic_miner_version.h"
+#include "pp_miner.hpp"
 #include "rx_miner.hpp"
 #include <stdio.h>
 
@@ -36,12 +37,24 @@ void executor::on_pool_new_job(uint32_t pool_id)
 	pool_job& job = pools[pool_id]->get_pool_job();
 	uint32_t diff = (job.target > 0 ? (0xffffffff / job.target) : 0xffffffff);
 	printer::inst().print(out_colours::K_BLUE, "Mining ", pow_type_to_str(job.type), " PoW, diff: ", diff);
+	randomx_dataset.adjust_to_seed(job.randomx_seed);
+	progpow_dataset.adjust_to_block(job.height);
+
+	record_miner_hashes();
+	if(pool_ctr.session_timestamp == 0)
+		pool_ctr.session_timestamp = get_timestamp_s();
+
 	if(job.type == pow_type::randomx)
-		randomx_dataset.adjust_to_seed(job.randomx_seed);
-	push_pool_job(job);
+		miner_jobs.emplace_front(job, &randomx_dataset, job.randomx_seed.get_id());
+	else if(job.type == pow_type::progpow)
+		miner_jobs.emplace_front(job, &progpow_dataset, ethash::get_epoch_number(job.height));
+	else
+		miner_jobs.emplace_front(job, nullptr, 0);
+
+	current_job = &miner_jobs.front();
 }
 
-void executor::on_found_result(const result& res)
+void executor::on_found_result(const miner_result& res)
 {
 	pools[0]->do_send_result(res);
 }
@@ -111,6 +124,7 @@ void executor::run()
 	push_idle_job();
 
 	miners.emplace_back(std::make_unique<rx_cpu_miner>(0));
+	miners.emplace_back(std::make_unique<pp_cpu_miner>(1));
 
 	uv_timer_init(uv_loop, &heartbeat_timer);
 	uv_timer_start(&heartbeat_timer, [](uv_timer_t*) { 

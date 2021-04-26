@@ -58,7 +58,7 @@ protected:
 	miner_job current_job;
 
 	std::mutex queue_mtx;
-	std::list<result> result_q;
+	std::list<miner_result> result_q;
 
 	uv_async_t async;
 	executor& exec;

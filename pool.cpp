@@ -53,7 +53,7 @@ void pool::do_login_call()
 	}
 }
 
-void pool::do_send_result(const result& res)
+void pool::do_send_result(const miner_result& res)
 {
 	uint32_t call_id;
 	register_call(call_types::result, call_id);
@@ -196,16 +196,17 @@ bool pool::process_json_doc()
 
 bool pool::process_pool_job(const Value& param)
 {
-	lpcJsVal blob, jobid, target, motd, pow_algo, seed_hash;
+	lpcJsVal blob, jobid, target, motd, pow_algo, seed_hash, height;
 	jobid = GetObjectMember(param, "job_id");
 	blob = GetObjectMember(param, "blob");
 	target = GetObjectMember(param, "target");
 	motd = GetObjectMember(param, "motd");
 	pow_algo = GetObjectMember(param, "pow_algo");
 	seed_hash = GetObjectMember(param, "seed_hash");
+	height = GetObjectMember(param, "height");
 
-	if(jobid == nullptr || blob == nullptr || target == nullptr || pow_algo == nullptr ||
-		!jobid->IsString() || !blob->IsString() || !target->IsString() || !pow_algo->IsString())
+	if(jobid == nullptr || blob == nullptr || target == nullptr || pow_algo == nullptr || height == nullptr || seed_hash == nullptr ||
+		!jobid->IsString() || !blob->IsString() || !target->IsString() || !pow_algo->IsString() || !height->IsUint())
 	{
 		return protocol_error("PARSE error: Job error 1");
 	}
@@ -248,15 +249,13 @@ bool pool::process_pool_job(const Value& param)
 	if(!hex2bin(sTempStr, 8, (unsigned char*)&my_job.target) || my_job.target == 0)
 		return protocol_error("PARSE error: Invalid target");
 
-	if(my_job.type == pow_type::randomx && seed_hash == nullptr)
-		return protocol_error("PARSE error: Missing seed_hash");
+	if(!seed_hash->IsString() || seed_hash->GetStringLength() != 64)
+		return protocol_error("PARSE error: Invalid seed_hash");
 
-	if(seed_hash != nullptr && seed_hash->IsString() && seed_hash->GetStringLength() == 64u)
-	{
-		if(!hex2bin(seed_hash->GetString(), seed_hash->GetStringLength(), my_job.randomx_seed.data))
-			return protocol_error("PARSE error: Invalid seed_hash");
-	}
+	if(!hex2bin(seed_hash->GetString(), seed_hash->GetStringLength(), my_job.randomx_seed.data))
+		return protocol_error("PARSE error: Invalid seed_hash");
 
+	my_job.height = height->GetUint();
 	state = pool_state::has_job;
 	my_job.nonce_pos = work_len - 4;
 	my_job.blob_len = work_len;

@@ -10,7 +10,7 @@ miner::miner(size_t thd_id) :
 		std::unique_lock<std::mutex> lock(ths->queue_mtx);
 		while(!ths->result_q.empty())
 		{
-			result res = ths->result_q.front();
+			miner_result res = ths->result_q.front();
 			ths->result_q.pop_front();
 			lock.unlock();
 			executor::inst().on_found_result(res);
