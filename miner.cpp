@@ -1,8 +1,8 @@
 #include "miner.hpp"
 #include "executor.hpp"
 
-miner::miner(size_t thd_id) :
- 	thd_id(thd_id), run(true), exec(executor::inst()), is_hashing(false), hash_count(0)
+miner::miner(uint32_t thd_id, miner_type type) :
+ 	thd_id(thd_id), type(type), run(true), exec(executor::inst()), is_hashing(false), hash_count(0)
 {
 	async.data = this;
 	uv_async_init(uv_loop, &async, [](uv_async_t* handle) {

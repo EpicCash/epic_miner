@@ -29,6 +29,29 @@ inline const char* pow_type_to_str(pow_type type)
 	}
 }
 
+enum class miner_type : uint32_t
+{
+	randomx_cpu_miner,
+	progpow_cpu_miner,
+	progpow_gpu_miner
+};
+
+constexpr std::initializer_list<miner_type> all_miner_types = 
+	{ miner_type::randomx_cpu_miner, miner_type::progpow_cpu_miner, miner_type::progpow_gpu_miner };
+
+inline const char* miner_type_to_str(miner_type type)
+{
+	switch(type)
+	{
+		case miner_type::randomx_cpu_miner:
+			return "RandomX CPU";
+		case miner_type::progpow_cpu_miner:
+			return "ProgPow CPU";
+		case miner_type::progpow_gpu_miner:
+			return "ProgPow GPU";
+	}
+}
+
 struct jobid
 {
 	char data[64];
@@ -84,10 +107,13 @@ struct miner_job
 	pow_type type;
 };
 
+constexpr uint32_t invalid_miner_id = uint32_t(-1);
 struct miner_result
 {
-	miner_result(const jobid& id, uint32_t nonce, const v32& res_hash) : id(id), nonce(nonce), res_hash(res_hash) {}
+	miner_result(const jobid& id, uint32_t nonce, const v32& res_hash, uint32_t miner_id) : id(id), nonce(nonce), res_hash(res_hash), miner_id(miner_id) {}
+
 	jobid id;
 	uint32_t nonce;
 	v32 res_hash;
+	uint32_t miner_id;
 };

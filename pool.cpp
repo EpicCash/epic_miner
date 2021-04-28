@@ -59,7 +59,7 @@ void pool::do_send_result(const miner_result& res)
 		return;
 
 	uint32_t call_id;
-	register_call(call_types::result, call_id);
+	register_call(call_types::result, call_id, res.miner_id);
 
 	ping_call_id = call_id;
 	ping_timestamp = get_timestamp_ms();
@@ -176,7 +176,8 @@ bool pool::process_json_doc()
 			mt = nullptr;
 		}
 
-		switch(find_call_type(call_id))
+		find_call_res res = find_call(call_id);
+		switch(res.type)
 		{
 		case call_types::invalid:
 			return protocol_error("Invalid call_id");
@@ -185,10 +186,10 @@ bool pool::process_json_doc()
 		case call_types::result:
 		{
 			int64_t ts_now = get_timestamp_ms();
-			uint64_t ping = 0;
+			uint64_t rtt = 0;
 			if(ping_call_id == call_id && ts_now > ping_timestamp)
-				ping = (ts_now - ping_timestamp) / 2;
-			executor::inst().on_result_reply(my_job.target, error_msg, ping);
+				rtt = ts_now - ping_timestamp;
+			executor::inst().on_result_reply(my_job.target, error_msg, rtt, res.miner_id);
 			return true;
 		}
 		case call_types::keepalive:

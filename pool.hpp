@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 
 #include "misc.hpp"
 #include "json.hpp"
@@ -157,6 +158,7 @@ private:
 		uint32_t call_id;
 		call_types type;
 		int64_t time_made;
+		uint32_t miner_id;
 	};
 
 	uint32_t g_call_id;
@@ -172,21 +174,28 @@ private:
 			mp.type = call_types::invalid;
 	}
 
-	call_types find_call_type(uint32_t call_id)
+	struct find_call_res
+	{
+		call_types type;
+		uint32_t miner_id;
+	};
+
+	find_call_res find_call(uint32_t call_id)
 	{
 		for(call_mapping& mp : call_map)
 		{
 			if(mp.type != call_types::invalid && mp.call_id == call_id)
 			{
-				call_types ret = mp.type;
+				find_call_res ret = { mp.type, mp.miner_id };
 				mp.type = call_types::invalid;
+				mp.miner_id = invalid_miner_id;
 				return ret;
 			}
 		}
-		return call_types::invalid;
+		return { call_types::invalid, invalid_miner_id };
 	}
 
-	bool register_call(call_types type, uint32_t& call_id)
+	bool register_call(call_types type, uint32_t& call_id, uint32_t miner_id = invalid_miner_id)
 	{
 		for(call_mapping& mp : call_map)
 		{
@@ -196,6 +205,7 @@ private:
 				mp.time_made = get_timestamp_ms();
 				call_id = g_call_id;
 				mp.call_id = g_call_id;
+				mp.miner_id = miner_id;
 				g_call_id++;
 				return true;
 			}

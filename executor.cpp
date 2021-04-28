@@ -20,7 +20,8 @@ void executor::on_key_pressed(char key)
 			printer::inst().print_nt("\n********************************************");
 			printer::inst().print_nt("Epic Miner " EPIC_MINER_VERSION);
 			printer::inst().print_nt("********************************************\n");
-			print_hashrate_report();
+			for(miner_type type : all_miner_types)
+				print_hashrate_report(type);
 			print_uptime();
 			print_share_totals();
 			print_error_log();
@@ -68,19 +69,20 @@ void executor::on_found_result(const miner_result& res)
 	pools[0]->do_send_result(res);
 }
 
-void executor::on_result_reply(uint32_t target, const char* error, uint64_t ping_ms)
+void executor::on_result_reply(uint32_t target, const char* error, uint64_t rtt_ms, uint32_t miner_id)
 {
+	miner_type mtype = miners.at(miner_id)->get_miner_type();
 	uint32_t diff = (target > 0 ? (0xffffffff / target) : 0xffffffff);
 	if(error == nullptr)
 	{
 		pool_ctr.accepted_shares_cnt++;
 		pool_ctr.total_diff += diff;
-		print_accpted_share(diff, ping_ms);
+		print_accpted_share(diff, rtt_ms, mtype);
 	}
 	else
 	{
 		pool_ctr.rejected_shares_cnt++;
-		printer::inst().print(out_colours::K_RED, "Rejected share: ", error);
+		printer::inst().print(out_colours::K_RED, "Rejected share [", miner_type_to_str(mtype), "]: ", error);
 		log_error(error);
 	}
 }

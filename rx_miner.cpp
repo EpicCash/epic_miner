@@ -27,7 +27,7 @@ void rx_cpu_miner::randomx_loop()
 		if(job_hash.get_work32() < current_job.target)
 		{
 			std::unique_lock<std::mutex> lock(queue_mtx);
-			result_q.emplace_back(current_job.id, nonce_ptr[0], job_hash);
+			result_q.emplace_back(current_job.id, nonce_ptr[0], job_hash, thd_id);
 			lock.unlock();
 			uv_async_send(&async);
 		}

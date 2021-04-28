@@ -50,7 +50,7 @@ public:
 	void on_pool_disconnect(uint32_t pool_id);
 
 	void on_found_result(const miner_result& res);
-	void on_result_reply(uint32_t target, const char* error, uint64_t ping_ms);
+	void on_result_reply(uint32_t target, const char* error, uint64_t ping_ms, uint32_t miner_id);
 
 	inline miner_job* get_current_job()
 	{
@@ -134,33 +134,40 @@ private:
 		return peak_hps;
 	}
 
-	inline void print_accpted_share(uint32_t diff, uint64_t ping_ms)
+	inline void print_accpted_share(uint32_t diff, uint64_t rtt_ms, miner_type mtype)
 	{
 		double hps = 0;
 		for(int i = 0; i < miners.size(); i++)
+		{
+			if(miners[i]->get_miner_type() != mtype)
+				continue;
 			hps += get_hashrate(i, 10);
+		}
 
 		if(hps > 0)
 		{
-			printer::inst().print(out_colours::K_GREEN, "Share accepted (", pool_ctr.accepted_shares_cnt, 
+			printer::inst().print(out_colours::K_GREEN, 
+						"Share accepted [", miner_type_to_str(mtype), "] (", pool_ctr.accepted_shares_cnt, 
 						out_colours::K_RED, "/", pool_ctr.rejected_shares_cnt, ") ",
 						out_colours::K_YELLOW, hps, " H/s",
-						out_colours::K_BLUE, " diff: ", diff, " ping: ", ping_ms);
+						out_colours::K_BLUE, " diff: ", diff, " rtt: ", rtt_ms);
 		}
 		else
 		{
-			printer::inst().print(out_colours::K_GREEN, "Share accepted (", pool_ctr.accepted_shares_cnt, 
+			printer::inst().print(out_colours::K_GREEN, 
+						"Share accepted [", miner_type_to_str(mtype), "] (", pool_ctr.accepted_shares_cnt, 
 						out_colours::K_RED, "/", pool_ctr.rejected_shares_cnt, ")",
-						out_colours::K_BLUE, " diff: ", diff, " ping: ", ping_ms);
+						out_colours::K_BLUE, " diff: ", diff, " rtt: ", rtt_ms);
 		}
 	}
 
-	inline void print_hashrate_report()
+	inline void print_hashrate_report(miner_type type)
 	{
 		std::string msg;
 		msg.reserve(80*6 + miners.size()*80);
-		
-		msg += "HASHRATE REPORT\n";
+
+		msg = miner_type_to_str(type);
+		msg += " HASHRATE REPORT\n";
 		msg.append(77, '-');
 		msg += "\n| THD | 10s cur. | 60s avg. | 10m avg. | 60m avg. |   Peak   | Session avg. |\n";
 		
@@ -175,8 +182,13 @@ private:
 		size_t len;
 		double sum_hr_10s = 0.0, sum_hr_60s = 0.0, sum_hr_10m = 0.0; 
 		double sum_hr_60m = 0.0, tot_hr_peak = 0.0, sum_hr_sess = 0.0;
+		size_t miner_count = 0;
 		for(size_t i = 0; i < miners.size(); i++)
 		{
+			if(miners[i]->get_miner_type() != type)
+				continue;
+
+			miner_count++;
 			double hr_10s, hr_60s, hr_10m, hr_60m, hr_peak, hr_sess;
 			hr_10s  = get_hashrate(i, 10);
 			hr_60s  = get_hashrate(i, 60);
@@ -204,8 +216,9 @@ private:
 					   sum_hr_10s, sum_hr_60s, sum_hr_10m, sum_hr_60m, tot_hr_peak, sum_hr_sess);
 		msg.append(buffer, len);
 		msg.append(77, '-');
-		
-		printer::inst().print_nt(msg.data());
+
+		if(miner_count > 0)
+			printer::inst().print_nt(msg.data());
 	}
 
 	inline void print_uptime()

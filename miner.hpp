@@ -27,7 +27,7 @@ typedef ring_buffer<hash_rec, 8192> hashlog_t;
 class miner
 {
 public:
-	miner(size_t thd_id);
+	miner(uint32_t thd_id, miner_type type);
 	virtual ~miner() { main_thread.join(); }
 
 	void stop_miner() { run = false; }
@@ -41,18 +41,19 @@ public:
 		hash_log.insert(hash_rec(time_now, cnt));
 	}
 
-	const hashlog_t& get_hash_log()
-	{
-		return hash_log;
-	}
+	const hashlog_t& get_hash_log() { return hash_log; }
 
 	bool dataset_check_loop();
+
+	miner_type get_miner_type() { return type; }
 
 protected:
 	virtual void thread_main() = 0;
 	void idle_loop();
 
-	size_t thd_id;
+	uint32_t thd_id;
+	miner_type type;
+
 	std::atomic<bool> run;
 	miner_job* last_job = nullptr;
 	miner_job current_job;

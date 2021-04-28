@@ -37,7 +37,7 @@ void pp_cpu_miner::progpow_loop()
 			bin2hex(header_hash.bytes, 32, hh);
 			printer::inst().print_dbg("Nonce : %llx %s", nonce_base | nonce_ctr, hh);
 			std::unique_lock<std::mutex> lock(queue_mtx);
-			result_q.emplace_back(current_job.id, nonce_ctr, v32(job_hash.final_hash.bytes));
+			result_q.emplace_back(current_job.id, nonce_ctr, v32(job_hash.final_hash.bytes), thd_id);
 			lock.unlock();
 			uv_async_send(&async);
 		}
